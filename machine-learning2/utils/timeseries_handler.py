@@ -171,6 +171,23 @@ def evaluate_arima_model(
 
 
 def create_features(df, label=None):
+    """
+    Extracts temporal features from a DataFrame's index and optionally separates the target variable.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        The input DataFrame. Must have a DatetimeIndex.
+    label : str, optional
+        Column name for the target variable. If provided, it is returned separately.
+
+    Returns
+    -------
+    pandas.DataFrame or tuple
+        If `label` is not None, returns a tuple (X, y), where X contains the feature DataFrame 
+        and y contains the target variable. Otherwise, returns the feature DataFrame X.
+    """
+
     if not df.index.freq:
         df.index = pd.date_range(start=df.index[0], periods=len(df), freq="MS")
 
@@ -188,6 +205,22 @@ def create_features(df, label=None):
 
 
 def create_lagged_features(data, window_size):
+    """
+    Generates lagged features for time series data.
+
+    Parameters
+    ----------
+    data : pandas.Series
+        The input time series data.
+    window_size : int
+        The size of the lagging window.
+
+    Returns
+    -------
+    tuple of numpy.ndarray
+        A tuple (X, y), where X is a 2D array of lagged features, and y is the array of target values.
+    """
+
     X, y = [], []
     for i in range(window_size, len(data)):
         X.append(data[i-window_size:i].values)  # Previous 12 months
@@ -204,7 +237,31 @@ def evaluate_xgb_model(
     grid_search: bool = False,
     param_grid: Optional[Dict[str, Any]] = None,
 ) -> Union[float, Tuple[float, List[float]]]:
-    forecast_horizon = 12
+    """
+    Evaluates an XGBoost model for time series forecasting with optional lagged features and hyperparameter tuning.
+
+    Parameters
+    ----------
+    train_set : list, numpy.ndarray, or pandas.Series
+        The training time series data.
+    label : str, optional
+        Column name for the target variable in `train_set`. Default is "target".
+    forecast_horizon : int, optional
+        Number of steps to forecast. Default is 12.
+    window_size : int, optional
+        Size of the lagging window for feature generation. Default is 12.
+    lag : bool, optional
+        If True, uses lagged features for training. Default is False.
+    grid_search : bool, optional
+        If True, performs grid search for hyperparameter tuning. Default is False.
+    param_grid : dict, optional
+        Hyperparameter grid for GridSearchCV. Used only if `grid_search` is True.
+
+    Returns
+    -------
+    dict
+        Dictionary containing evaluation metrics such as RMSE, MAE, runtime, and forecasted values.
+    """
 
     train_size = len(train_set) - forecast_horizon
     train, forecast_period = train_set[:train_size], train_set[train_size:]
